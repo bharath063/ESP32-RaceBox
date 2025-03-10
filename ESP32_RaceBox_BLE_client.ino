@@ -17,12 +17,12 @@
   This code is licensed under the GPL-3.0 License.
 */
 
-//Required libraries: NimBLEclient
+//Required libraries: NimBLEclient version <= 1.4.2 . See: https://github.com/lademeister/ESP32-RaceBox/issues/3
 //libraries requred for 1.5" SPI full color OLED (tested with Waveshare 1.5" SPI color OLED): Adafruit_GFX, Adafruit_SSD1351
 
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1351.h>
+#include "Display.h"
+#include "AdafruitDisplay.h"
 #include <SPI.h>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSerif9pt7b.h>
@@ -65,7 +65,7 @@
 //device type, will be set automatically:  0: RaceBox Mini/Mini S, 1: RaceBox Micro - used to handle different battery status decoding between racebox mini/mini s and micro.
 int deviceType = -1; //-1: unknown device type as default, the statement 'if (deviceName.rfind("RaceBox Micro", 0) == 0) {' and the following lines in class AdvertisedDeviceCallbacks automatically determines the device type.
 
-Adafruit_SSD1351 OLED = Adafruit_SSD1351(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, CS_PIN, DC_PIN, RST_PIN);
+AdafruitDisplay OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, CS_PIN, DC_PIN, RST_PIN);
 
 // BLE UUIDs
 static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -593,79 +593,78 @@ bool connectToRaceBox() {
 
 
 void setup() {
-  Serial.begin(115200);
-  Serial.flush();
-  Serial.println();
-  delay(100);
-  Serial.println();
-  Serial.println();
-  Serial.println("               ############################################################");
-  Serial.println("               ###                                                      ###");
-  Serial.println("               ###               ESP32 BLE RaceBox client               ###");
-  Serial.println("               ###                                                      ###");
-  Serial.println("               ############################################################");
-  Serial.println();
-  Serial.println();
+    Serial.begin(115200);
+    Serial.flush();
+    Serial.println();
+    delay(100);
+    Serial.println();
+    Serial.println();
+    Serial.println("               ############################################################");
+    Serial.println("               ###                                                      ###");
+    Serial.println("               ###               ESP32 BLE RaceBox client               ###");
+    Serial.println("               ###                                                      ###");
+    Serial.println("               ############################################################");
+    Serial.println();
+    Serial.println();
 
-  //initialize the display
-  OLED.begin();
-  set_display_orientation_and_color_invert();
-  OLED.fillScreen(COLOR_BLACK);
-  int yPos = 40; //starting Y position
-  int lineYPos = yPos;
-  OLED.drawLine(0, lineYPos, 128, lineYPos, COLOR_WHITE); //divider line
-  yPos = yPos + 4;
-  OLED.setCursor(8, yPos);
-  OLED.setTextColor(COLOR_WHITE);
-  OLED.print("RaceBox ");
-  OLED.setTextColor(COLOR_CYAN);
-  OLED.print("BLE CLIENT");
-  lineYPos = yPos + 11;
-  OLED.drawLine(0, lineYPos, 128, lineYPos, COLOR_WHITE); //divider line
-  yPos=lineYPos + 8;
-  OLED.setCursor(0, yPos);
-  OLED.setTextColor(COLOR_BLUE);
-  OLED.print("Bluetooth ");
-  OLED.setTextColor(COLOR_WHITE);
-  OLED.print("scanning...");
-  
-  #ifdef TARGET_DEVICE_ADDRESS
-  yPos=yPos + 14;
-  OLED.setCursor(0, yPos);
-  OLED.setTextColor(COLOR_YELLOW);
-  OLED.print("will only connect to");
-  yPos=yPos + 10;
-  OLED.setCursor(0, yPos);
-  OLED.print("RaceBox with address");
-  yPos=yPos + 12;
-  OLED.setCursor(10, yPos);
-  OLED.setTextColor(COLOR_MAGENTA);
-  OLED.print(TARGET_DEVICE_ADDRESS);
-  #endif
+    // Initialize the display
+    OLED.begin();
+    set_display_orientation_and_color_invert();
+    OLED.fillScreen(COLOR_BLACK);
+    int yPos = 40; // Starting Y position
+    int lineYPos = yPos;
+    OLED.drawLine(0, lineYPos, 128, lineYPos, COLOR_WHITE); // Divider line
+    yPos = yPos + 4;
+    OLED.setCursor(8, yPos);
+    OLED.setTextColor(COLOR_WHITE);
+    OLED.print("RaceBox ");
+    OLED.setTextColor(COLOR_CYAN);
+    OLED.print("BLE CLIENT");
+    lineYPos = yPos + 11;
+    OLED.drawLine(0, lineYPos, 128, lineYPos, COLOR_WHITE); // Divider line
+    yPos = lineYPos + 8;
+    OLED.setCursor(0, yPos);
+    OLED.setTextColor(COLOR_BLUE);
+    OLED.print("Bluetooth ");
+    OLED.setTextColor(COLOR_WHITE);
+    OLED.print("scanning...");
 
-  Serial.println("Enter '1', '2', or '3' to serial console to start a function (currently those are only empty function prototypes)");
-  Serial.println();
-  Serial.println("starting scanning for advertisements of Bluetooth devices.");
-  
-  #ifdef TARGET_DEVICE_ADDRESS
-   Serial.printf("Waiting for a specific RaceBox with TARGET_DEVICE_ADDRESS %s to appear (as set in code)...\n", TARGET_DEVICE_ADDRESS); //notice the Serial.printf to be able to print TARGET_DEVICE_ADDRESS to serial.
-  #else
-   Serial.println("Waiting for any RaceBox to appear (no specific TARGET_DEVICE_ADDRESS is set)...");
-  #endif
-  
-  Serial.println();
-  Serial.println("---------------------------------------------  scan results  --------------------------------------------------------");
-  Serial.println();
-  
-  NimBLEDevice::init("ESP32_RaceBox_Client");
-  NimBLEScan* pScan = NimBLEDevice::getScan();
-  pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
-  pScan->setInterval(45);
-  pScan->setWindow(15);
-  pScan->setActiveScan(true);
-  //pScan->start(5, false); //scan for 5 s
-  pScan->start(0, false); //scan indefinitely until we stop it manually
-  
+    #ifdef TARGET_DEVICE_ADDRESS
+    yPos = yPos + 14;
+    OLED.setCursor(0, yPos);
+    OLED.setTextColor(COLOR_YELLOW);
+    OLED.print("will only connect to");
+    yPos = yPos + 10;
+    OLED.setCursor(0, yPos);
+    OLED.print("RaceBox with address");
+    yPos = yPos + 12;
+    OLED.setCursor(10, yPos);
+    OLED.setTextColor(COLOR_MAGENTA);
+    OLED.print(TARGET_DEVICE_ADDRESS);
+    #endif
+
+    Serial.println("Enter '1', '2', or '3' to serial console to start a function (currently those are only empty function prototypes)");
+    Serial.println();
+    Serial.println("starting scanning for advertisements of Bluetooth devices.");
+
+    #ifdef TARGET_DEVICE_ADDRESS
+    Serial.printf("Waiting for a specific RaceBox with TARGET_DEVICE_ADDRESS %s to appear (as set in code)...\n", TARGET_DEVICE_ADDRESS); // Notice the Serial.printf to be able to print TARGET_DEVICE_ADDRESS to serial.
+    #else
+    Serial.println("Waiting for any RaceBox to appear (no specific TARGET_DEVICE_ADDRESS is set)...");
+    #endif
+
+    Serial.println();
+    Serial.println("---------------------------------------------  scan results  --------------------------------------------------------");
+    Serial.println();
+
+    NimBLEDevice::init("ESP32_RaceBox_Client");
+    NimBLEScan* pScan = NimBLEDevice::getScan();
+    pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
+    pScan->setInterval(45);
+    pScan->setWindow(15);
+    pScan->setActiveScan(true);
+    // pScan->start(5, false); // Scan for 5 s
+    pScan->start(0, false); // Scan indefinitely until we stop it manually
 }
 
 void print_RaceBox_Data_message_payload_to_serial(){
